@@ -26,8 +26,6 @@ def after(**kargs):
         shutil.copyfile(os.path.join(module_dir,'resources/Model.scala'), os.path.join(app.path, 'app/models/Model.scala'))
         shutil.copyfile(os.path.join(module_dir,'resources/index.ssp'), os.path.join(app.path, 'app/views/Application/index.ssp'))
         shutil.copyfile(os.path.join(module_dir,'resources/default.ssp'), os.path.join(app.path, 'app/views/default.ssp'))
-        shutil.copyfile(os.path.join(module_dir,'resources/500.scaml'), os.path.join(app.path, 'app/views/errors/500.scaml'))
-        shutil.copyfile(os.path.join(module_dir,'resources/500.css'), os.path.join(app.path, 'public/stylesheets/500.css'))
         f = open(os.path.join(app.path, 'conf/application.conf'),'a')
         f.write('\n\n#scalate config\nscalate=ssp\njvm.memory=-Xmx256M -Xms32M')
         f.close()
