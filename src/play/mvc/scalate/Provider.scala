@@ -90,7 +90,8 @@ trait Provider {
 
     //loading template
     val buffer = new StringWriter()
-    var context = new DefaultRenderContext(engine, new PrintWriter(buffer))
+    // TODO: set uri
+    var context = new DefaultRenderContext(null, engine, new PrintWriter(buffer))
     val renderArgs = Scope.RenderArgs.current()
 
     // try to fill context

@@ -27,7 +27,8 @@ class PrecompilerProvider extends Provider {
     play.Logger.info("compiling: " + playPath + " to:" + engine.bytecodeDirectory + " ...")
 
     val buffer = new StringWriter()
-    var context = new DefaultRenderContext(engine, new PrintWriter(buffer))
+    // TODO: set uri
+    var context = new DefaultRenderContext(null, engine, new PrintWriter(buffer))
 
     // populate playcontext
     context.attributes("playcontext") = PlayContext
