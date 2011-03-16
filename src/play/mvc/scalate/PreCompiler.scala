@@ -20,9 +20,6 @@ object PreCompiler {
 }
 
 class PrecompilerProvider extends Provider {
-  def reggroup = "<%@[^>]*%>".r
-
-  val Re = "<%@.*var(.*):.*%>".r
 
   val compile: String => Unit = (filePath: String) => {
     val playPath = filePath.replace((new File(Play.applicationPath + "/app/views")).toString, "")
@@ -34,15 +31,6 @@ class PrecompilerProvider extends Provider {
 
     // populate playcontext
     context.attributes("playcontext") = PlayContext
-
-    //set layout
-    // open file & try to find context variables and initialize them
-    for (contextVariable <- reggroup findAllIn readFileToString(filePath))
-      contextVariable match {
-        case Re(key) => context.attributes(key.trim) = ""
-        case _ =>
-      }
-
     context.attributes("javax.servlet.error.exception") = new Exception
     context.attributes("javax.servlet.error.message") = ""
 
