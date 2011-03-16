@@ -1,10 +1,13 @@
 package play.mvc
- 
+
 abstract class ScalateController extends ScalaController with scalate.Provider {
 
   implicit def scalateStringAsTemplateName(name: String) = new {
+
     def asTemplate(args: Any*) = renderWithScalate(name, args)
+
     def asTemplate = renderWithScalate(name)
+
   }
 
   private lazy val not_reached: results.ScalaRenderTemplate = null
@@ -15,12 +18,14 @@ abstract class ScalateController extends ScalaController with scalate.Provider {
     not_reached // This line must not been executed.
   }
 
-  override def Template(_args: Any*) = { 
-    renderWithScalate(args = _args) 
+  override def Template(_args: Any*) = {
+    renderWithScalate(args = _args)
 
     not_reached // This line must not been executed.    
   }
 
   override def ^ = this.Template
-  override def ^(args: Any*) = this.Template(args:_*)
+
+  override def ^(args: Any*) = this.Template(args: _*)
+
 }
