@@ -4,13 +4,13 @@ import java.io.{File, PrintWriter, StringWriter}
 
 import scala.collection.JavaConversions._
 
-import play.Play
+import play.{Logger, Play}
 import play.classloading.enhancers.LocalvariablesNamesEnhancer.LocalVariablesNamesTracer
 import play.data.validation.Validation
-import play.exceptions.{UnexpectedException, PlayException, TemplateNotFoundException}
-import play.mvc.results.ScalateResult
+import play.exceptions._
 import play.mvc.{Scope, Http}
-import play.vfs.{VirtualFile => VFS}
+import play.mvc.results.ScalateResult
+import play.mvc.scalate.exceptions._
 
 import org.fusesource.scalate._
 import org.fusesource.scalate.layout.DefaultLayoutStrategy
@@ -93,12 +93,6 @@ trait Provider {
 
   def validationErrors = Validation.errors
 
-
-  private def errorTemplate: String = {
-    val fullPath = new File(Play.applicationPath, "/app/views/errors/500.scaml").toString
-    fullPath.replace(new File(Play.applicationPath + "/app/views").toString, "")
-  }
-
   private def renderScalateTemplate(templateName: String, args: Seq[Any]) {
     //loading template
     val buffer = new StringWriter()
@@ -130,6 +124,27 @@ trait Provider {
       throw new TemplateNotFoundException(templateName)
     }
 
+    def handleSpecialError(ex: Throwable) {
+      context.attributes("javax.servlet.error.exception") = ex
+      context.attributes("javax.servlet.error.message") = ex.getMessage
+
+      val errorTemplate = findTemplatePath("errors/500.html").getOrElse {
+        // pass through to default error template
+        throw ex
+      }
+
+      try {
+        engine.layout(engine.load(errorTemplate), context)
+      } catch {
+        case ex =>
+          // prevent infinite loops when the error template has errors
+          Logger.error(ex, "Exception while rendering error page")
+          throw new ScalateResult("500 Internal Server Error", templateName)
+      }
+
+      throw new ScalateResult(buffer.toString, templateName)
+    }
+
     try {
       engine.layout(templatePath, context)
     } catch {
@@ -143,12 +158,14 @@ trait Provider {
           }
         }
         throw ex
-      case ex: InvalidSyntaxException => handleSpecialError(context, ex)
-      case ex: CompilerException => handleSpecialError(context, ex)
-      case ex: Exception => handleSpecialError(context, ex)
-    } finally {
-      throw new ScalateResult(buffer.toString, templateName)
+      case ex: InvalidSyntaxException =>
+        handleSpecialError(new ScalateInvalidSyntaxException(ex))
+      case ex: CompilerException =>
+        handleSpecialError(new ScalateCompilationException(ex))
+      case ex => handleSpecialError(ex)
     }
+
+    throw new ScalateResult(buffer.toString, templateName)
   }
 
   private def findTemplatePath(templateName: String): Option[String] = {
@@ -160,20 +177,6 @@ trait Provider {
         return Some(file.toString.replace(new File(viewPath).toString, ""))
     }
     None
-  }
-
-  private def handleSpecialError(context: DefaultRenderContext, ex: Exception) {
-    context.attributes("javax.servlet.error.exception") = ex
-    context.attributes("javax.servlet.error.message") = ex.getMessage
-    try {
-      engine.layout(engine.load(errorTemplate), context)
-    } catch {
-      case ex: Exception =>
-      // TODO use logging API from Play here...
-        println("Caught: " + ex)
-        ex.printStackTrace
-
-    }
   }
 
   // determine if we need to render with scalate
