@@ -13,8 +13,8 @@ import play.mvc.{Scope, Http}
 import play.vfs.{VirtualFile => VFS}
 
 import org.fusesource.scalate._
-import org.fusesource.scalate.support.FileResourceLoader
-import org.fusesource.scalate.util.SourceCodeHelper
+import org.fusesource.scalate.layout.DefaultLayoutStrategy
+import org.fusesource.scalate.util.{FileResourceLoader, SourceCodeHelper}
 
 trait Provider {
 
@@ -30,6 +30,7 @@ trait Provider {
       } else {
         determineURI()
       }
+
     if (shouldRenderWithScalate(_templateName)) {
       renderScalateTemplate(_templateName, args)
     } else {
@@ -55,18 +56,31 @@ trait Provider {
     if (Play.mode == Play.Mode.PROD && Play.configuration.getProperty("scalate.allowReloadInProduction") == null) engine.allowReload = false
 
     engine.workingDirectory = new File(Play.applicationPath, "/tmp")
-
     engine.resourceLoader = new FileResourceLoader(Some(new File(Play.applicationPath + "/app/views")))
+
     val classpathRoot = if (new File(Play.applicationPath, "/precompiled/java").exists && Play.mode == Play.Mode.PROD)
       new File(Play.applicationPath, "/precompiled/java").toString
     else
       new File(Play.applicationPath, "/tmp/classes").toString
+
     engine.classpath = classpathRoot
     engine.combinedClassPath = true
-    val renderMode = Play.configuration.getProperty("scalate")
-    engine.layoutStrategy = new layout.DefaultLayoutStrategy(engine, "/default." + renderMode)
+
+    val defaultLayout = renderMode.map("/default." + _)
+
+    engine.layoutStrategy = new DefaultLayoutStrategy(engine, defaultLayout: _*)
+
     if (usePlayClassloader) engine.classLoader = Play.classloader
+
     engine
+  }
+
+  private val defaultRenderMode = Array("ssp", "scaml", "jade", "mustache")
+
+  def renderMode = {
+    val renderMode = Play.configuration.getProperty("scalate.rendermode")
+    if (renderMode == null) defaultRenderMode
+    else renderMode.split(",").map(_.trim).distinct
   }
 
   val engine = initEngine()
@@ -86,8 +100,6 @@ trait Provider {
   }
 
   private def renderScalateTemplate(templateName: String, args: Seq[Any]) {
-    val renderMode = Play.configuration.getProperty("scalate")
-
     //loading template
     val buffer = new StringWriter()
     // TODO: set uri
@@ -114,32 +126,40 @@ trait Provider {
       case ex: Exception => throw new UnexpectedException(ex)
     }
 
+    val templatePath = findTemplatePath(templateName).getOrElse {
+      throw new TemplateNotFoundException(templateName)
+    }
+
     try {
-      val baseName = templateName.replaceAll(".html", "." + renderMode)
-      val templatePath = new File(Play.applicationPath + "/app/views", "/" + baseName)
-        .toString.replace(new File(Play.applicationPath + "/app/views").toString, "")
       engine.layout(templatePath, context)
     } catch {
-      case ex: TemplateNotFoundException => {
-        if (ex.isSourceAvailable) {
-          throw ex
-
+      case ex: TemplateNotFoundException =>
+        if (!ex.isSourceAvailable) {
+          val element = PlayException.getInterestingStrackTraceElement(ex)
+          if (element != null) {
+            throw new TemplateNotFoundException(templateName,
+              Play.classes.getApplicationClass(element.getClassName()),
+              element.getLineNumber());
+          }
         }
-        val element = PlayException.getInterestingStrackTraceElement(ex)
-        if (element != null) {
-          throw new TemplateNotFoundException(templateName,
-            Play.classes.getApplicationClass(element.getClassName()),
-            element.getLineNumber());
-        } else {
-          throw ex
-        }
-      }
+        throw ex
       case ex: InvalidSyntaxException => handleSpecialError(context, ex)
       case ex: CompilerException => handleSpecialError(context, ex)
       case ex: Exception => handleSpecialError(context, ex)
     } finally {
       throw new ScalateResult(buffer.toString, templateName)
     }
+  }
+
+  private def findTemplatePath(templateName: String): Option[String] = {
+    for (mode <- renderMode) {
+      val baseName = templateName.replaceAll(".html", "." + mode)
+      val viewPath = Play.applicationPath + "/app/views"
+      val file = new File(viewPath, "/" + baseName)
+      if (file.isFile)
+        return Some(file.toString.replace(new File(viewPath).toString, ""))
+    }
+    None
   }
 
   private def handleSpecialError(context: DefaultRenderContext, ex: Exception) {
@@ -159,11 +179,8 @@ trait Provider {
   // determine if we need to render with scalate
   private def shouldRenderWithScalate(template: String): Boolean = {
     val ignore = Play.configuration.getProperty("scalate.ignore")
-    if (Play.configuration.containsKey("scalate")) {
-      if (ignore != null) {
-        ignore.split(",").filter(template.startsWith(_)).size == 0
-      } else true
-    } else false
+    ignore == null ||
+      ignore.split(",").map(_.trim).distinct.filter(template.startsWith(_)).size != 0
   }
 
   private def discardLeadingAt(templateName: String): String = {

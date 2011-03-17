@@ -1,7 +1,7 @@
 package play.modules.scalate
 
-import play.PlayPlugin
 import play.Play
+import play.PlayPlugin
 import play.mvc.scalate.PrecompilerProvider
 import play.templates.Template
 import play.vfs.VirtualFile

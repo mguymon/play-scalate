@@ -46,8 +46,21 @@ class PrecompilerProvider extends Provider {
   def precompileTemplates = walk(new File(Play.applicationPath, "/app/views"))(compile)
 
   def walk(file: File)(func: String => Unit): Boolean = {
-    if (file.isFile && (file.getName.endsWith(".ssp") || file.getName.endsWith(".scaml")) && !file.getName.contains("default.ssp") && !file.getName.contains("default.scaml")) func(file.getPath)
-    if (file.isDirectory) for (i <- 0 until file.listFiles.length) walk(file.listFiles()(i))(func)
+    val fileName = file.getName
+    if (file.isFile && (
+      fileName.endsWith(".ssp") ||
+        fileName.endsWith(".scaml") ||
+        fileName.endsWith(".jade") ||
+        fileName.endsWith(".mustache")) &&
+      !fileName.contains("default.ssp") &&
+      !fileName.contains("default.scaml") &&
+      !fileName.contains("default.jade") &&
+      !fileName.contains("default.mustache"))
+      func(file.getPath)
+
+    if (file.isDirectory)
+      for (i <- 0 until file.listFiles.length) walk(file.listFiles()(i))(func)
+
     true
   }
 
