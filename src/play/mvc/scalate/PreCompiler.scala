@@ -64,26 +64,4 @@ class PrecompilerProvider extends Provider {
     true
   }
 
-  def readFileToString(filePath: String): String = {
-    val scanLines =
-      if (Play.configuration.getProperty("scalate.linescanned") != null)
-        Play.configuration.getProperty("scalate.linescanned").toInt
-      else 20
-
-    var counter = 0
-    val reader = new BufferedReader(new FileReader(filePath))
-    var line: String = reader.readLine
-    val sb = new StringBuffer
-
-    while (line != null && counter != scanLines) {
-      sb.append(line)
-      counter = counter + 1
-      line = reader.readLine()
-    }
-
-    reader.close()
-
-    sb.toString
-  }
-
 }
