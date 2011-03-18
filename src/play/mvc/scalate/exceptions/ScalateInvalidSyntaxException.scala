@@ -29,6 +29,6 @@ class ScalateInvalidSyntaxException(ex: InvalidSyntaxException)
   override def getLineNumber = ex.pos.line
 
   /** @see [[SourceAttachment.getErrorTitle]] */
-  override def getErrorTitle = "Scalate compilation error"
+  override def getErrorTitle = "Scalate invalid syntax error"
 
 }
