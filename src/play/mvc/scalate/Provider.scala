@@ -188,10 +188,12 @@ trait Provider {
 
   private def discardLeadingAt(templateName: String): String = {
     if (templateName.startsWith("@")) {
-      if (!templateName.contains(".")) {
-        determineURI(controller + "." + templateName.substring(1))
+      determineURI {
+        if (!templateName.contains("."))
+          controller + "." + templateName.substring(1)
+        else
+          templateName.substring(1)
       }
-      determineURI(templateName.substring(1))
     } else templateName
   }
 
