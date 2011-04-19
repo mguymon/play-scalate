@@ -163,15 +163,15 @@ object PlayContext {
         (param, i) <- params.zipWithIndex
         val name = if (i < names.length) names(i) else ""} {
         if (param.isInstanceOf[Router.ActionDefinition] && param != null) {
-          Unbinder.unBind(r, param.toString, name)
+          Unbinder.unBind(r, param.toString, name, null)
         }
         else if (isSimpleParam(actionMethod.getParameterTypes.apply(i))) {
           if (param != null) {
-            Unbinder.unBind(r, param.toString, name)
+            Unbinder.unBind(r, param.toString, name, null)
           }
         }
         else {
-          Unbinder.unBind(r, param, name)
+          Unbinder.unBind(r, param, name, null)
         }
       }
 

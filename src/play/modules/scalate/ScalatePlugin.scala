@@ -34,7 +34,7 @@ class ScalatePlugin extends PlayPlugin {
 
     def compile: Unit = pp.compile(this.source)
 
-    def render(args: java.util.Map[String, AnyRef]): String = {
+    override def internalRender(args: java.util.Map[String, AnyRef]): String = {
       ""
     }
   }

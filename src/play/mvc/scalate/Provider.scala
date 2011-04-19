@@ -1,32 +1,31 @@
 package play.mvc.scalate
 
-import java.io.{File, PrintWriter, StringWriter}
+import java.io.{ File, PrintWriter, StringWriter }
 
 import scala.collection.JavaConversions._
 
-import play.{Logger, Play}
+import play.{ Logger, Play }
 import play.classloading.enhancers.LocalvariablesNamesEnhancer.LocalVariablesNamesTracer
 import play.data.validation.Validation
 import play.exceptions._
-import play.mvc.{Scope, Http}
+import play.mvc.{ Scope, Http }
 import play.mvc.results.ScalateResult
 import play.mvc.scalate.exceptions._
 
 import org.fusesource.scalate._
 import org.fusesource.scalate.layout.DefaultLayoutStrategy
-import org.fusesource.scalate.util.{FileResourceLoader, SourceCodeHelper}
+import org.fusesource.scalate.util.{ FileResourceLoader, SourceCodeHelper }
 
 trait Provider {
 
-  def renderWithScalate(templateName: String = null, args: Seq[Any] = Seq[Any]()) {
+  def renderWithScalate(templateName: String = null, args: Seq[(Symbol, Any)] = Seq[(Symbol, Any)]()) {
     //determine template
     val _templateName: String =
       if (templateName != null) {
         templateName
-      }
-      else if (args.length > 0 && args(0).isInstanceOf[String] &&
-        LocalVariablesNamesTracer.getAllLocalVariableNames(args(0)).isEmpty) {
-        discardLeadingAt(args(0).toString)
+      } else if (args.length > 0 && args(0)._1 == 'template &&
+        LocalVariablesNamesTracer.getAllLocalVariableNames(args(0)_2).isEmpty) {
+        discardLeadingAt(args(0)._2.toString)
       } else {
         determineURI()
       }
@@ -50,8 +49,7 @@ trait Provider {
     val playcontext = SourceCodeHelper.name(PlayContext.getClass).dropRight(1) + ".type"
     engine.bindings = List(
       Binding("context", SourceCodeHelper.name(classOf[DefaultRenderContext]), true),
-      Binding("playcontext", playcontext, true)
-    )
+      Binding("playcontext", playcontext, true))
     engine.importStatements ++= List(customImports)
     if (Play.mode == Play.Mode.PROD && Play.configuration.getProperty("scalate.allowReloadInProduction") == null) engine.allowReload = false
 
@@ -93,7 +91,7 @@ trait Provider {
 
   def validationErrors = Validation.errors
 
-  private def renderScalateTemplate(templateName: String, args: Seq[Any]) {
+  private def renderScalateTemplate(templateName: String, args: Seq[(Symbol, Any)]) {
     //loading template
     val buffer = new StringWriter()
     // TODO: set uri
@@ -101,11 +99,8 @@ trait Provider {
     val renderArgs = Scope.RenderArgs.current()
 
     // try to fill context
-    for (o <- args) {
-      for (name <- LocalVariablesNamesTracer.getAllLocalVariableNames(o).iterator) {
-        context.attributes(name) = o
-      }
-    }
+    for (o <- args)
+        context.attributes(o._1.toString) = o._2
 
     context.attributes("playcontext") = PlayContext
 
@@ -201,6 +196,5 @@ trait Provider {
     template.replace(".", "/") + "." +
       (if (requestFormat == null) "html" else requestFormat)
   }
-
 
 }
