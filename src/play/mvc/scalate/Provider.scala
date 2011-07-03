@@ -100,7 +100,7 @@ trait Provider {
 
     // try to fill context
     for (o <- args)
-        context.attributes(o._1.toString) = o._2
+        context.attributes(o._1.name) = o._2
 
     context.attributes("playcontext") = PlayContext
 
