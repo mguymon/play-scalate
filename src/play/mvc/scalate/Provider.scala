@@ -89,7 +89,10 @@ trait Provider {
 
   def controller = Http.Request.current().controller
 
-  def validationErrors = Validation.errors
+  def validationErrors:Map[String,play.data.validation.Error] = {
+    import scala.collection.JavaConverters._
+    Map.empty[String,play.data.validation.Error] ++ Validation.errors.asScala.map( e => (e.getKey, e) )
+  }
 
   private def renderScalateTemplate(templateName: String, args: Seq[(Symbol, Any)]) {
     //loading template

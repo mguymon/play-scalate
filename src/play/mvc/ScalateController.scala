@@ -1,6 +1,7 @@
 package play.mvc
 
 import play.mvc.scalate.Provider
+import play.data.validation.Validation
 
 abstract class ScalateController extends ScalaController with Provider {
 
@@ -28,4 +29,9 @@ abstract class ScalateController extends ScalaController with Provider {
 
     not_reached // This line must not been executed. 
   }
+
+  override def validationErrors:Map[String,play.data.validation.Error] = {
+    import scala.collection.JavaConverters._
+    Map.empty[String,play.data.validation.Error] ++ Validation.errors.asScala.map( e => (e.getKey, e) )
+  } 
 }
