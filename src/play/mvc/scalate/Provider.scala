@@ -40,7 +40,13 @@ trait Provider {
   val bytecodeDirectory: Option[File] = None
 
   // Create and configure the Scalate template engine
-  private def initEngine(usePlayClassloader: Boolean = true, customImports: String = "import controllers._;import models._;import play.utils._"): TemplateEngine = {
+  private def initEngine(usePlayClassloader: Boolean = true): TemplateEngine = {
+  
+    var customImports = "import controllers._;import models._;import play.utils._"
+    if ( Play.configuration.getProperty("scalate.template.imports" ) == null ) {
+        customImports = Play.configuration.getProperty("scalate.template.imports" )
+    }
+  
     val engine = new TemplateEngine {
       override def bytecodeDirectory =
         Provider.this.bytecodeDirectory.getOrElse(super.bytecodeDirectory)
