@@ -43,7 +43,7 @@ trait Provider {
   private def initEngine(usePlayClassloader: Boolean = true): TemplateEngine = {
   
     var customImports = "import controllers._;import models._;import play.utils._"
-    if ( Play.configuration.getProperty("scalate.template.imports" ) == null ) {
+    if ( Play.configuration.getProperty("scalate.template.imports" ) != null ) {
         customImports = Play.configuration.getProperty("scalate.template.imports" )
     }
   
