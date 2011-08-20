@@ -1,10 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <project name="Scalate" default="build" basedir=".">
-
-	<target name="check" unless="play.path">
-        <fail message="Please specify Play framework path using -Dplay.path=/path/to/framework/home" />
+	<property file="build.properties" />
+	
+	<target name="checkPlay" unless="play.path">
+        <fail message="Please specify Play framework path using -Dplay.path=/path/to/framework/home or set in build.properties" />
     </target>
+	
+	<target name="checkScala" unless="play.scala.path">
+		<fail message="Please specify Play Scala Module path using -Dplay.scala.path=/path/to/scala/module or set in build.properties" />
+	</target>
 	
     <path id="project.classpath">
         <pathelement path="${play.path}/framework/classes"/>
@@ -12,6 +17,9 @@
             <include name="*.jar"/>                        
         </fileset> 
         <fileset dir="${play.path}/framework/lib">
+            <include name="*.jar"/>                        
+        </fileset> 
+    	<fileset dir="${play.scala.path}/lib">
             <include name="*.jar"/>                        
         </fileset> 
         <fileset dir="lib">
@@ -26,7 +34,7 @@
     	<delete file="lib/play-scalate.jar"/>
     </target>
 
-    <target name="build" depends="check,clean">
+    <target name="build" depends="checkPlay,checkScala,clean">
         <taskdef resource="scala/tools/ant/antlib.xml">
             <classpath refid="project.classpath" />
         </taskdef>
