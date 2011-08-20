@@ -10,7 +10,7 @@ object Application extends ScalateController{
       user2.save()
       user3.save()
       val userlist = List(user2,user3)
-      Template(user2,name,userlist)
+      renderWithScalate(args=Seq(('user2,user2),('name,name),('userlist,userlist)) )
     }
 }
 

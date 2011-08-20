@@ -1,9 +1,8 @@
 package models
  
 import java.util._
-
+import javax.persistence._
 import play.db.jpa._
-import play.data.Validators._ 
  
 @Entity
 class User(

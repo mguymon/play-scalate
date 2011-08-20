@@ -2,106 +2,113 @@
 
 <project name="Scalate" default="build" basedir=".">
 	<property file="build.properties" />
-	
+
 	<target name="checkPlay" unless="play.path">
-        <fail message="Please specify Play framework path using -Dplay.path=/path/to/framework/home or set in build.properties" />
-    </target>
-	
+		<fail message="Please specify Play framework path using -Dplay.path=/path/to/framework/home or set in build.properties" />
+	</target>
+
 	<target name="checkScala" unless="play.scala.path">
 		<fail message="Please specify Play Scala Module path using -Dplay.scala.path=/path/to/scala/module or set in build.properties" />
 	</target>
-	
-    <path id="project.classpath">
-        <pathelement path="${play.path}/framework/classes"/>
-        <fileset dir="${play.path}/framework">
-            <include name="*.jar"/>                        
-        </fileset> 
-        <fileset dir="${play.path}/framework/lib">
-            <include name="*.jar"/>                        
-        </fileset> 
-    	<fileset dir="${play.scala.path}/lib">
-            <include name="*.jar"/>                        
-        </fileset> 
-        <fileset dir="lib">
-            <include name="*.jar"/>                        
-        </fileset> 
-        <pathelement path="tmp/classes"/>
-    </path>
+
+	<path id="project.classpath">
+		<pathelement path="${play.path}/framework/classes" />
+		<fileset dir="${play.path}/framework">
+			<include name="*.jar" />
+		</fileset>
+		<fileset dir="${play.path}/framework/lib">
+			<include name="*.jar" />
+		</fileset>
+		<fileset dir="${play.scala.path}/lib">
+			<include name="*.jar" />
+		</fileset>
+		<fileset dir="lib">
+			<include name="*.jar" />
+		</fileset>
+		<pathelement path="tmp/classes" />
+	</path>
 
 
-    <target name="clean"> 
-        <delete dir="tmp" />
-    	<delete file="lib/play-scalate.jar"/>
-    </target>
+	<target name="clean">
+		<delete dir="tmp" />
+		<delete file="lib/play-scalate.jar" />
+	</target>
 
-    <target name="build" depends="checkPlay,checkScala,clean">
-        <taskdef resource="scala/tools/ant/antlib.xml">
-            <classpath refid="project.classpath" />
-        </taskdef>
-        
-        <mkdir dir="tmp/classes" />
-        
-        <scalac srcdir="src" destdir="tmp/classes" force="changed">
-            <classpath refid="project.classpath" />
-				</scalac>
+	<target name="build" depends="checkPlay,checkScala,clean">
+		<taskdef resource="scala/tools/ant/antlib.xml">
+			<classpath refid="project.classpath" />
+		</taskdef>
+
+		<mkdir dir="tmp/classes" />
+
+		<scalac srcdir="src" destdir="tmp/classes" force="changed">
+			<classpath refid="project.classpath" />
+		</scalac>
 
 
-        <javac srcdir="src" destdir="tmp/classes" debug="true">
-            <classpath refid="project.classpath" />
-        </javac>
-        
-        
-        <copy todir="tmp/classes">
-            <fileset dir="src">
-                <include name="**/*.properties"/>
-                <include name="**/*.xml"/>
-                <include name="**/play.plugins"/>
-            </fileset>
+		<javac srcdir="src" destdir="tmp/classes" debug="true">
+			<classpath refid="project.classpath" />
+		</javac>
+
+
+		<copy todir="tmp/classes">
+			<fileset dir="src">
+				<include name="**/*.properties" />
+				<include name="**/*.xml" />
+				<include name="**/play.plugins" />
+			</fileset>
+		</copy>
+
+		<jar destfile="lib/play-scalate.jar" basedir="tmp/classes">
+			<manifest>
+				<section name="Play">
+					<attribute name="Specification-Title" value="Scala" />
+				</section>
+			</manifest>
+		</jar>
+
+	</target>
+
+	<target name="test" depends="build">
+		<echo message="Using ${play.path}/play" />
+		
+		<copy todir="${basedir}/tmp/test">
+			<fileset dir="${basedir}/samples-and-tests/just-test-cases" />
+		</copy>
+		
+		<copy todir="${basedir}/tmp/test/modules/scala-test">
+            <fileset dir="${play.scala.path}" />
         </copy>
-        
-        <jar destfile="lib/play-scalate.jar" basedir="tmp/classes">
-            <manifest>
-                <section name="Play">
-                    <attribute name="Specification-Title" value="Scala"/>
-                </section>
-            </manifest>
-        </jar>
-        
-    </target>
+		
+		<antcall target="play-test">
+			<param name="testAppPath" value="${basedir}/tmp/test" />
+		</antcall>
 
-     <target name="test" depends="build">
-	<echo message="Using ${play.path}/play" />
-	<delete dir="${basedir}/samples-and-tests/just-test-cases/tmp"/>
-	
-	<antcall target="play-test">
-            <param name="testAppPath" value="${basedir}/samples-and-tests/just-test-cases"/>
-        </antcall>
+		<echo message="*****************" />
+		<echo message="All test passed !" />
+		<echo message="*****************" />
 
-  	 <echo message="*****************" />
-        <echo message="All test passed !" />
-        <echo message="*****************" />
+	</target>
 
-    </target>
+	<target name="play-test">
+		<echo message="${play.path}/play auto-test ${testAppPath} (wait)" />
+		<exec executable="${play.path}/play" failonerror="true">
+			<arg value="clean" />
+			<arg value="${testAppPath}" />
+		</exec>
+		<exec executable="${play.path}/play" failonerror="true">
+			<arg value="auto-test" />
+			<arg value="${testAppPath}" />
+		</exec>
+		<available file="${testAppPath}/test-result/result.passed" property="${testAppPath}testPassed" />
+		<fail message="Last test has failed ! (Check results in file://${testAppPath}/test-result)">
+			<condition>
+				<not>
+					<isset property="${testAppPath}testPassed" />
+				</not>
+			</condition>
+		</fail>
+	</target>
 
-   <target name="play-test">
-        <echo message="${play.path}/play auto-test ${testAppPath} (wait)" />
-        <exec executable="${play.path}/play" failonerror="true">
-            <arg value="clean"/>
-            <arg value="${testAppPath}"/>
-        </exec>
-        <exec executable="${play.path}/play" failonerror="true">
-            <arg value="auto-test"/>
-            <arg value="${testAppPath}"/>
-        </exec>
-        <available file="${testAppPath}/test-result/result.passed" property="${testAppPath}testPassed" />
-        <fail message="Last test has failed ! (Check results in file://${testAppPath}/test-result)">
-            <condition>
-                <not>
-                    <isset property="${testAppPath}testPassed"/>
-                </not>
-            </condition>
-        </fail>
-    </target>
 
-	
 </project>
