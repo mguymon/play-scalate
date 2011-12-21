@@ -1,6 +1,6 @@
 package play.mvc.scalate
 
-import java.io.{ File, PrintWriter, StringWriter }
+import java.io.{ File, PrintWriter, StringWriter, FileWriter, BufferedWriter }
 
 import scala.collection.JavaConversions._
 
@@ -18,7 +18,7 @@ import org.fusesource.scalate.util.{ FileResourceLoader, SourceCodeHelper }
 
 trait Provider {
 
-  def renderWithScalate(templateName: String = null, args: Seq[(Symbol, Any)] = Seq[(Symbol, Any)]()) {
+  def renderWithScalate(templateName: String = null, args: Seq[(Symbol, Any)] = Seq[(Symbol, Any)](), cachePath: String = null) {
     //determine template
     val _templateName: String =
       if (templateName != null) {
@@ -31,7 +31,7 @@ trait Provider {
       }
 
     if (shouldRenderWithScalate(_templateName)) {
-      renderScalateTemplate(_templateName, args)
+      renderScalateTemplate(_templateName, args, cachePath)
     } else {
       throw new RuntimeException("could not find scalate template")
     }
@@ -100,7 +100,7 @@ trait Provider {
     Map.empty[String,play.data.validation.Error] ++ Validation.errors.asScala.map( e => (e.getKey, e) )
   }
 
-  private def renderScalateTemplate(templateName: String, args: Seq[(Symbol, Any)]) {
+  private def renderScalateTemplate(templateName: String, args: Seq[(Symbol, Any)], cachePath: String = null) {
     //loading template
     val buffer = new StringWriter()
     // TODO: set uri
@@ -168,7 +168,13 @@ trait Provider {
         handleSpecialError(new ScalateCompilationException(ex))
       case ex => handleSpecialError(ex)
     }
-
+    
+    if ( cachePath != null ) {
+        val fileWriter = new PrintWriter(new BufferedWriter(new FileWriter(cachePath)));
+        fileWriter.print( buffer.toString() )
+        fileWriter.close();
+    }
+    
     throw new ScalateResult(buffer.toString, templateName)
   }
 
